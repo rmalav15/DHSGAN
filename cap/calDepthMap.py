@@ -25,9 +25,9 @@ def calDepthMap(I, r):
     return outputRegion, outputPixel
 
 
-def getTmap(Image, beta=1.0, r=15, gimfiltR=60, eps=10 ** -3):
-    dR, dP = calDepthMap(Image, r)
-    guided_filter = GuidedFilter(I, gimfiltR, eps)
+def get_tmap(image, beta=1.0, r=15, gimfiltR=60, eps=10 ** -3):
+    dR, dP = calDepthMap(image, r)
+    guided_filter = GuidedFilter(image, gimfiltR, eps)
     refineDR = guided_filter.filter(dR)
     tR = np.exp(-beta * refineDR)
     return tR

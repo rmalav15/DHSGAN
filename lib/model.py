@@ -225,7 +225,7 @@ def inference_data_loader(FLAGS):
         else:
             im = im / np.max(im)
 
-        # check grayscale image
+        # TODO: check grayscale image, Reject
         # if im.shape[-1] != 3:
         #     h, w = im.shape
         #     temp = np.empty((h, w, 3), dtype=np.uint8)
