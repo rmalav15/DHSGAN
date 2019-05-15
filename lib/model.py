@@ -9,6 +9,8 @@ import os
 import math
 import scipy.misc as sic
 import numpy as np
+from functools import partial
+from cap.calDepthMap import get_tmap
 
 
 # Define the dataloader
@@ -16,50 +18,50 @@ def data_loader(FLAGS):
     with tf.device('/cpu:0'):
         # Define the returned data batches
         Data = collections.namedtuple('Data', 'paths_LR, paths_HR, inputs, targets, image_count, steps_per_epoch')
+        cap_tmap = partial(get_tmap, beta=FLAGS.tmap_beta)
 
-        #Check the input directory
+        # Check the input directory
         if (FLAGS.input_dir_LR == 'None') or (FLAGS.input_dir_HR == 'None') or (FLAGS.input_dir_TMAP == 'None'):
             raise ValueError('Input directory is not provided')
 
-        if (not os.path.exists(FLAGS.input_dir_LR)) or (not os.path.exists(FLAGS.input_dir_HR)) or (not os.path.exists(FLAGS.input_dir_TMAP)):
+        if (not os.path.exists(FLAGS.input_dir_LR)) or (not os.path.exists(FLAGS.input_dir_HR)) or (
+                not os.path.exists(FLAGS.input_dir_TMAP)):
             raise ValueError('Input directory not found')
 
         image_list_LR = os.listdir(FLAGS.input_dir_LR)
         image_list_LR = [_ for _ in image_list_LR if _.endswith('.png')]
-        if len(image_list_LR)==0:
+        if len(image_list_LR) == 0:
             raise Exception('No png files in the input directory')
 
         image_list_LR_temp = sorted(image_list_LR)
         image_list_LR = [os.path.join(FLAGS.input_dir_LR, _) for _ in image_list_LR_temp]
         image_list_HR = [os.path.join(FLAGS.input_dir_HR, _) for _ in image_list_LR_temp]
-        image_list_TMAP = [os.path.join(FLAGS.input_dir_TMAP, _) for _ in image_list_LR_temp]
+        # image_list_TMAP = [os.path.join(FLAGS.input_dir_TMAP, _) for _ in image_list_LR_temp]
 
         image_list_LR_tensor = tf.convert_to_tensor(image_list_LR, dtype=tf.string)
         image_list_HR_tensor = tf.convert_to_tensor(image_list_HR, dtype=tf.string)
-        image_list_TMAP_tensor = tf.convert_to_tensor(image_list_TMAP, dtype=tf.string)
+        # image_list_TMAP_tensor = tf.convert_to_tensor(image_list_TMAP, dtype=tf.string)
 
         with tf.variable_scope('load_image'):
-            # define the image list queue
-            # image_list_LR_queue = tf.train.string_input_producer(image_list_LR, shuffle=False, capacity=FLAGS.name_queue_capacity)
-            # image_list_HR_queue = tf.train.string_input_producer(image_list_HR, shuffle=False, capacity=FLAGS.name_queue_capacity)
-            #print('[Queue] image list queue use shuffle: %s'%(FLAGS.mode == 'Train'))
-            output = tf.train.slice_input_producer([image_list_LR_tensor, image_list_HR_tensor, image_list_TMAP_tensor],
+
+            output = tf.train.slice_input_producer([image_list_LR_tensor, image_list_HR_tensor],
                                                    shuffle=False, capacity=FLAGS.name_queue_capacity)
 
             # Reading and decode the images
-            reader = tf.WholeFileReader(name='image_reader')
             image_LR = tf.read_file(output[0])
             image_HR = tf.read_file(output[1])
-            image_TMAP = tf.read_file(output[2])
+            # image_TMAP = tf.read_file(output[2])
             input_image_LR = tf.image.decode_png(image_LR, channels=3)
             input_image_HR = tf.image.decode_png(image_HR, channels=3)
-            input_image_TMAP = tf.image.decode_png(image_TMAP, channels=1)
+            input_image_TMAP = tf.py_func(cap_tmap, [output[2]],
+                                          tf.float32)  # tf.image.decode_png(image_TMAP, channels=1)
             input_image_LR = tf.image.convert_image_dtype(input_image_LR, dtype=tf.float32)
             input_image_HR = tf.image.convert_image_dtype(input_image_HR, dtype=tf.float32)
-            input_image_TMAP = tf.image.convert_image_dtype(input_image_TMAP, dtype=tf.float32)
+            # input_image_TMAP = tf.image.convert_image_dtype(input_image_TMAP, dtype=tf.float32)
             input_image_LR = tf.concat([input_image_LR, input_image_TMAP], 2)
 
-            assertion_LR = tf.assert_equal(tf.shape(input_image_LR)[2], 4, message="input image does not have 4 channels")
+            assertion_LR = tf.assert_equal(tf.shape(input_image_LR)[2], 4,
+                                           message="input image does not have 4 channels")
             assertion_HR = tf.assert_equal(tf.shape(input_image_HR)[2], 3, message="target does not have 3 channels")
             with tf.control_dependencies([assertion_LR, assertion_HR]):
                 input_image_LR = tf.identity(input_image_LR)
@@ -80,10 +82,12 @@ def data_loader(FLAGS):
                     # Set the shape of the input image. the target will have 4X size
                     input_size = tf.shape(inputs)
                     target_size = tf.shape(targets)
-                    offset_w = tf.cast(tf.floor(tf.random_uniform([], 0, tf.cast(input_size[1], tf.float32) - FLAGS.crop_size)),
-                                       dtype=tf.int32)
-                    offset_h = tf.cast(tf.floor(tf.random_uniform([], 0, tf.cast(input_size[0], tf.float32) - FLAGS.crop_size)),
-                                       dtype=tf.int32)
+                    offset_w = tf.cast(
+                        tf.floor(tf.random_uniform([], 0, tf.cast(input_size[1], tf.float32) - FLAGS.crop_size)),
+                        dtype=tf.int32)
+                    offset_h = tf.cast(
+                        tf.floor(tf.random_uniform([], 0, tf.cast(input_size[0], tf.float32) - FLAGS.crop_size)),
+                        dtype=tf.int32)
 
                     if FLAGS.task == 'SRGAN' or FLAGS.task == 'SRResnet':
                         inputs = tf.image.crop_to_bounding_box(inputs, offset_h, offset_w, FLAGS.crop_size,
@@ -121,12 +125,14 @@ def data_loader(FLAGS):
                 target_images.set_shape([FLAGS.crop_size, FLAGS.crop_size, 3])
 
         if FLAGS.mode == 'train':
-            paths_LR_batch, paths_HR_batch, inputs_batch, targets_batch = tf.train.shuffle_batch([output[0], output[1], input_images, target_images],
-                                            batch_size=FLAGS.batch_size, capacity=FLAGS.image_queue_capacity+32*FLAGS.batch_size,
-                                            min_after_dequeue=FLAGS.image_queue_capacity, num_threads=FLAGS.queue_thread)
+            paths_LR_batch, paths_HR_batch, inputs_batch, targets_batch = tf.train.shuffle_batch(
+                [output[0], output[1], input_images, target_images],
+                batch_size=FLAGS.batch_size, capacity=FLAGS.image_queue_capacity + 32 * FLAGS.batch_size,
+                min_after_dequeue=FLAGS.image_queue_capacity, num_threads=FLAGS.queue_thread)
         else:
-            paths_LR_batch, paths_HR_batch, inputs_batch, targets_batch = tf.train.batch([output[0], output[1], input_images, target_images],
-                                            batch_size=FLAGS.batch_size, num_threads=FLAGS.queue_thread, allow_smaller_final_batch=True)
+            paths_LR_batch, paths_HR_batch, inputs_batch, targets_batch = tf.train.batch(
+                [output[0], output[1], input_images, target_images],
+                batch_size=FLAGS.batch_size, num_threads=FLAGS.queue_thread, allow_smaller_final_batch=True)
 
         steps_per_epoch = int(math.ceil(len(image_list_LR) / FLAGS.batch_size))
         if FLAGS.task == 'SRGAN' or FLAGS.task == 'SRResnet':
@@ -145,61 +151,12 @@ def data_loader(FLAGS):
     )
 
 
-# The test data loader. Allow input image with different size
-def test_data_loader(FLAGS):
-    # Get the image name list
-    if (FLAGS.input_dir_LR == 'None') or (FLAGS.input_dir_HR == 'None')  or (FLAGS.input_dir_TMAP == 'None'):
-        raise ValueError('Input directory is not provided')
-
-    if (not os.path.exists(FLAGS.input_dir_LR)) or (not os.path.exists(FLAGS.input_dir_HR)) or (not os.path.exists(FLAGS.input_dir_TMAP)):
-        raise ValueError('Input directory not found')
-
-    image_list_LR_temp = os.listdir(FLAGS.input_dir_LR)
-    image_list_LR = [os.path.join(FLAGS.input_dir_LR, _) for _ in image_list_LR_temp if _.split('.')[-1] == 'png']
-    image_list_HR = [os.path.join(FLAGS.input_dir_HR, _) for _ in image_list_LR_temp if _.split('.')[-1] == 'png']
-    image_list_TMAP = [os.path.join(FLAGS.input_dir_TMAP, _) for _ in image_list_LR_temp if _.split('.')[-1] == 'png']
-
-    # Read in and preprocess the images
-    def preprocess_test(name, mode):
-        im = sic.imread(name).astype(np.float32)
-        if mode == 'TMAP':
-            tf.assert_equal(len(im.shape), 2, message="TMAP is not grayscale")
-            im = np.expand_dims(im, axis=2)
-        # check grayscale image
-        # if im.shape[-1] != 3:
-        #     h, w = im.shape
-        #     temp = np.empty((h, w, 3), dtype=np.uint8)
-        #     temp[:, :, :] = im[:, :, np.newaxis]
-        #     im = temp.copy()
-        if mode == 'LR' or mode == 'TMAP':
-            im = im / np.max(im)
-        elif mode == 'HR':
-            im = im / np.max(im)
-            im = im * 2 - 1
-
-        return im
-
-    image_LR = [preprocess_test(_, 'LR') for _ in image_list_LR]
-    image_HR = [preprocess_test(_, 'HR') for _ in image_list_HR]
-    image_TMAP = [preprocess_test(_, 'TMAP') for _ in image_list_TMAP]
-
-    image_LR = [np.concatenate((im, tmap), axis=2) for im, tmap in zip(image_LR, image_TMAP)]
-
-    # Push path and image into a list
-    Data = collections.namedtuple('Data', 'paths_LR, paths_HR, inputs, targets')
-
-    return Data(
-        paths_LR = image_list_LR,
-        paths_HR = image_list_HR,
-        inputs = image_LR,
-        targets = image_HR
-    )
-
-
 # The inference data loader. Allow input image with different size
 def inference_data_loader(FLAGS):
+    cap_tmap = partial(get_tmap, beta=FLAGS.tmap_beta)
+
     # Get the image name list
-    if (FLAGS.input_dir_LR == 'None')  or (FLAGS.input_dir_TMAP == 'None'):
+    if (FLAGS.input_dir_LR == 'None') or (FLAGS.input_dir_TMAP == 'None'):
         raise ValueError('Input directory is not provided')
 
     if (not os.path.exists(FLAGS.input_dir_LR)) or (not os.path.exists(FLAGS.input_dir_TMAP)):
@@ -207,37 +164,16 @@ def inference_data_loader(FLAGS):
 
     image_list_LR_temp = os.listdir(FLAGS.input_dir_LR)
     image_list_LR = [os.path.join(FLAGS.input_dir_LR, _) for _ in image_list_LR_temp if _.split('.')[-1] == 'png']
-    image_list_TMAP = [os.path.join(FLAGS.input_dir_TMAP, _) for _ in image_list_LR_temp if _.split('.')[-1] == 'png']
 
     # Read in and preprocess the images
-    def preprocess_test(name, mode):
-        im = sic.imread(name).astype(np.float32)
-        #im = im / 255.0   ## np.max(im) or 255    
-        if mode == 'TMAP':
-            im = im / 255.0
-            tf.assert_equal(len(im.shape), 2, message="TMAP is not grayscale")
-            im = np.expand_dims(im, axis=2)
-            if FLAGS.inference_mode == 'depth':
-                im = np.exp( - FLAGS.tmap_beta * im)
-            elif FLAGS.inference_mode == 'tmap':
-                im = np.log(im)  # exp(-beta * d) --> - beta * d, assumtion beta = 1 
-                im = np.exp(FLAGS.tmap_beta * im) #exp( new_beta * - bet * d)
-        else:
-            im = im / np.max(im)
+    def preprocess_test(image_path):
+        im = sic.imread(image_path).astype(np.float32)
+        im = im / np.max(im)
+        tmap = cap_tmap(image_path)
+        return im, tmap
 
-        # TODO: check grayscale image, Reject
-        # if im.shape[-1] != 3:
-        #     h, w = im.shape
-        #     temp = np.empty((h, w, 3), dtype=np.uint8)
-        #     temp[:, :, :] = im[:, :, np.newaxis]
-        #     im = temp.copy()
-        #im = im / np.max(im)
-
-        return im
-
-    image_LR = [preprocess_test(_, 'LR') for _ in image_list_LR]
-    image_TMAP = [preprocess_test(_, 'TMAP') for _ in image_list_TMAP]
-    image_LR = [np.concatenate((im, tmap), axis=2) for im, tmap in zip(image_LR, image_TMAP)]
+    image_LR = [preprocess_test(_) for _ in image_list_LR]
+    image_LR = [np.concatenate((im, tmap), axis=2) for im, tmap in image_LR]
 
     # Push path and image into a list
     Data = collections.namedtuple('Data', 'paths_LR, inputs')
@@ -252,7 +188,7 @@ def inference_data_loader(FLAGS):
 def generator(gen_inputs, gen_output_channels, reuse=False, FLAGS=None):
     # Check the flag
     if FLAGS is None:
-        raise  ValueError('No FLAGS is provided for generator')
+        raise ValueError('No FLAGS is provided for generator')
 
     # The Bx residual blocks
     def residual_block(inputs, output_channel, stride, scope):
@@ -266,7 +202,6 @@ def generator(gen_inputs, gen_output_channels, reuse=False, FLAGS=None):
 
         return net
 
-
     with tf.variable_scope('generator_unit', reuse=reuse):
         # The input layer
         with tf.variable_scope('input_stage'):
@@ -276,8 +211,8 @@ def generator(gen_inputs, gen_output_channels, reuse=False, FLAGS=None):
         stage1_output = net
 
         # The residual block parts
-        for i in range(1, FLAGS.num_resblock+1 , 1):
-            name_scope = 'resblock_%d'%(i)
+        for i in range(1, FLAGS.num_resblock + 1, 1):
+            name_scope = 'resblock_%d' % (i)
             net = residual_block(net, 64, 1, name_scope)
 
         with tf.variable_scope('resblock_output'):
@@ -362,9 +297,9 @@ def discriminator(dis_inputs, FLAGS=None):
 def VGG19_slim(input, type, reuse, scope):
     # Define the feature to extract according to the type of perceptual
     if type == 'VGG54':
-        target_layer =  'vgg_19/conv5/conv5_4'
+        target_layer = 'vgg_19/conv5/conv5_4'
     elif type == 'VGG22':
-        target_layer =  'vgg_19/conv2/conv2_2'
+        target_layer = 'vgg_19/conv2/conv2_2'
     else:
         raise NotImplementedError('Unknown perceptual type')
     _, output = vgg_19(input, is_training=False, reuse=reuse)
@@ -427,12 +362,12 @@ def SRGAN(inputs, targets, FLAGS):
             if FLAGS.perceptual_mode == 'MSE':
                 content_loss = tf.reduce_mean(tf.reduce_sum(tf.square(diff), axis=[3]))
             else:
-                content_loss = FLAGS.vgg_scaling*tf.reduce_mean(tf.reduce_sum(tf.square(diff), axis=[3]))
+                content_loss = FLAGS.vgg_scaling * tf.reduce_mean(tf.reduce_sum(tf.square(diff), axis=[3]))
 
         with tf.variable_scope('adversarial_loss'):
             adversarial_loss = tf.reduce_mean(-tf.log(discrim_fake_output + FLAGS.EPS))
 
-        gen_loss = content_loss + (FLAGS.ratio)*adversarial_loss
+        gen_loss = content_loss + (FLAGS.ratio) * adversarial_loss
         print(adversarial_loss.get_shape())
         print(content_loss.get_shape())
 
@@ -446,7 +381,8 @@ def SRGAN(inputs, targets, FLAGS):
     # Define the learning rate and global step
     with tf.variable_scope('get_learning_rate_and_global_step'):
         global_step = tf.contrib.framework.get_or_create_global_step()
-        learning_rate = tf.train.exponential_decay(FLAGS.learning_rate, global_step, FLAGS.decay_step, FLAGS.decay_rate, staircase=FLAGS.stair)
+        learning_rate = tf.train.exponential_decay(FLAGS.learning_rate, global_step, FLAGS.decay_step, FLAGS.decay_rate,
+                                                   staircase=FLAGS.stair)
         incr_global_step = tf.assign(global_step, global_step + 1)
 
     with tf.variable_scope('dicriminator_train'):
@@ -457,28 +393,28 @@ def SRGAN(inputs, targets, FLAGS):
 
     with tf.variable_scope('generator_train'):
         # Need to wait discriminator to perform train step
-        with tf.control_dependencies([discrim_train]+ tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
+        with tf.control_dependencies([discrim_train] + tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
             gen_tvars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='generator')
             gen_optimizer = tf.train.AdamOptimizer(learning_rate, beta1=FLAGS.beta)
             gen_grads_and_vars = gen_optimizer.compute_gradients(gen_loss, gen_tvars)
             gen_train = gen_optimizer.apply_gradients(gen_grads_and_vars)
 
-    #[ToDo] If we do not use moving average on loss??
+    # [ToDo] If we do not use moving average on loss??
     exp_averager = tf.train.ExponentialMovingAverage(decay=0.99)
     update_loss = exp_averager.apply([discrim_loss, adversarial_loss, content_loss])
 
     return Network(
-        discrim_real_output = discrim_real_output,
-        discrim_fake_output = discrim_fake_output,
-        discrim_loss = exp_averager.average(discrim_loss),
-        discrim_grads_and_vars = discrim_grads_and_vars,
-        adversarial_loss = exp_averager.average(adversarial_loss),
-        content_loss = exp_averager.average(content_loss),
-        gen_grads_and_vars = gen_grads_and_vars,
-        gen_output = gen_output,
-        train = tf.group(update_loss, incr_global_step, gen_train),
-        global_step = global_step,
-        learning_rate = learning_rate
+        discrim_real_output=discrim_real_output,
+        discrim_fake_output=discrim_fake_output,
+        discrim_loss=exp_averager.average(discrim_loss),
+        discrim_grads_and_vars=discrim_grads_and_vars,
+        adversarial_loss=exp_averager.average(adversarial_loss),
+        content_loss=exp_averager.average(content_loss),
+        gen_grads_and_vars=gen_grads_and_vars,
+        gen_output=gen_output,
+        train=tf.group(update_loss, incr_global_step, gen_train),
+        global_step=global_step,
+        learning_rate=learning_rate
     )
 
 
@@ -491,7 +427,7 @@ def SRResnet(inputs, targets, FLAGS):
     with tf.variable_scope('generator'):
         output_channel = targets.get_shape().as_list()[-1]
         gen_output = generator(inputs, output_channel, reuse=False, FLAGS=FLAGS)
-        gen_output.set_shape([FLAGS.batch_size, FLAGS.crop_size , FLAGS.crop_size , 3])
+        gen_output.set_shape([FLAGS.batch_size, FLAGS.crop_size, FLAGS.crop_size, 3])
 
     # Use the VGG54 feature
     if FLAGS.perceptual_mode == 'VGG54':
@@ -589,14 +525,3 @@ def save_images(fetches, FLAGS, step=None):
                 f.write(contents)
         filesets.append(fileset)
     return filesets
-
-
-
-
-
-
-
-
-
-
-
