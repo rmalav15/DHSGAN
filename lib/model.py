@@ -21,11 +21,10 @@ def data_loader(FLAGS):
         cap_tmap = partial(get_tmap, beta=FLAGS.tmap_beta)
 
         # Check the input directory
-        if (FLAGS.input_dir_LR == 'None') or (FLAGS.input_dir_HR == 'None') or (FLAGS.input_dir_TMAP == 'None'):
+        if (FLAGS.input_dir_LR == 'None') or (FLAGS.input_dir_HR == 'None'):
             raise ValueError('Input directory is not provided')
 
-        if (not os.path.exists(FLAGS.input_dir_LR)) or (not os.path.exists(FLAGS.input_dir_HR)) or (
-                not os.path.exists(FLAGS.input_dir_TMAP)):
+        if (not os.path.exists(FLAGS.input_dir_LR)) or (not os.path.exists(FLAGS.input_dir_HR)):
             raise ValueError('Input directory not found')
 
         image_list_LR = os.listdir(FLAGS.input_dir_LR)
@@ -156,10 +155,10 @@ def inference_data_loader(FLAGS):
     cap_tmap = partial(get_tmap, beta=FLAGS.tmap_beta)
 
     # Get the image name list
-    if (FLAGS.input_dir_LR == 'None') or (FLAGS.input_dir_TMAP == 'None'):
+    if FLAGS.input_dir_LR == 'None':
         raise ValueError('Input directory is not provided')
 
-    if (not os.path.exists(FLAGS.input_dir_LR)) or (not os.path.exists(FLAGS.input_dir_TMAP)):
+    if not os.path.exists(FLAGS.input_dir_LR):
         raise ValueError('Input directory not found')
 
     image_list_LR_temp = os.listdir(FLAGS.input_dir_LR)
@@ -168,12 +167,19 @@ def inference_data_loader(FLAGS):
     # Read in and preprocess the images
     def preprocess_test(image_path):
         im = sic.imread(image_path).astype(np.float32)
+        assert im.shape[2] == 3  # Throw error if GrayScale
         im = im / np.max(im)
         tmap = cap_tmap(image_path)
         return im, tmap
 
     image_LR = [preprocess_test(_) for _ in image_list_LR]
-    image_LR = [np.concatenate((im, tmap), axis=2) for im, tmap in image_LR]
+    image_LR = [np.concatenate((im, np.expand_dims(tmap, axis=2)), axis=2) for im, tmap in image_LR]
+
+    # _image_LR = [preprocess_test(_) for _ in image_list_LR]
+    # image_LR = []
+    # for im, tmap in _image_LR:
+    #     tmp = np.concatenate((im, tmap), axis=2)
+    #     image_LR.append(tmp)
 
     # Push path and image into a list
     Data = collections.namedtuple('Data', 'paths_LR, inputs')

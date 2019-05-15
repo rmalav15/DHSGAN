@@ -31,4 +31,6 @@ def get_tmap(image_path, beta=1.0, r=15, gimfiltR=60, eps=10 ** -3):
     guided_filter = GuidedFilter(image, gimfiltR, eps)
     refineDR = guided_filter.filter(dR)
     tR = np.exp(-beta * refineDR)
+    cv2.imwrite("depth.png", dR*255)
+    cv2.imwrite("tmap.png", tR*255)
     return tR

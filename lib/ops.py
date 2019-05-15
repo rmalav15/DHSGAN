@@ -127,7 +127,7 @@ def print_configuration_op(FLAGS):
     print('[Configurations]:')
     a = FLAGS.mode
     #pdb.set_trace()
-    for name, value in FLAGS.__flags.items():
+    for name, value in FLAGS.flag_values_dict().items():
         if type(value) == float:
             print('\t%s: %f'%(name, value))
         elif type(value) == int:
