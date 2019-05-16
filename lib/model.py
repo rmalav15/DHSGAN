@@ -2,14 +2,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import tensorflow as tf
+from lib.ops import *
 import collections
 import os
-
 import math
-import numpy as np
 import scipy.misc as sic
-
-from lib.ops import *
+import numpy as np
+from functools import partial
+from cap.calDepthMap import get_tmap
 
 
 # Define the dataloader
@@ -17,13 +18,13 @@ def data_loader(FLAGS):
     with tf.device('/cpu:0'):
         # Define the returned data batches
         Data = collections.namedtuple('Data', 'paths_LR, paths_HR, inputs, targets, image_count, steps_per_epoch')
+        cap_tmap = partial(get_tmap, beta=FLAGS.tmap_beta)
 
         # Check the input directory
-        if (FLAGS.input_dir_LR == 'None') or (FLAGS.input_dir_HR == 'None') or (FLAGS.input_dir_TMAP == 'None'):
+        if (FLAGS.input_dir_LR == 'None') or (FLAGS.input_dir_HR == 'None'):
             raise ValueError('Input directory is not provided')
 
-        if (not os.path.exists(FLAGS.input_dir_LR)) or (not os.path.exists(FLAGS.input_dir_HR)) or (
-        not os.path.exists(FLAGS.input_dir_TMAP)):
+        if (not os.path.exists(FLAGS.input_dir_LR)) or (not os.path.exists(FLAGS.input_dir_HR)):
             raise ValueError('Input directory not found')
 
         image_list_LR = os.listdir(FLAGS.input_dir_LR)
@@ -34,31 +35,28 @@ def data_loader(FLAGS):
         image_list_LR_temp = sorted(image_list_LR)
         image_list_LR = [os.path.join(FLAGS.input_dir_LR, _) for _ in image_list_LR_temp]
         image_list_HR = [os.path.join(FLAGS.input_dir_HR, _) for _ in image_list_LR_temp]
-        image_list_TMAP = [os.path.join(FLAGS.input_dir_TMAP, _) for _ in image_list_LR_temp]
+        # image_list_TMAP = [os.path.join(FLAGS.input_dir_TMAP, _) for _ in image_list_LR_temp]
 
         image_list_LR_tensor = tf.convert_to_tensor(image_list_LR, dtype=tf.string)
         image_list_HR_tensor = tf.convert_to_tensor(image_list_HR, dtype=tf.string)
-        image_list_TMAP_tensor = tf.convert_to_tensor(image_list_TMAP, dtype=tf.string)
+        # image_list_TMAP_tensor = tf.convert_to_tensor(image_list_TMAP, dtype=tf.string)
 
         with tf.variable_scope('load_image'):
-            # define the image list queue
-            # image_list_LR_queue = tf.train.string_input_producer(image_list_LR, shuffle=False, capacity=FLAGS.name_queue_capacity)
-            # image_list_HR_queue = tf.train.string_input_producer(image_list_HR, shuffle=False, capacity=FLAGS.name_queue_capacity)
-            # print('[Queue] image list queue use shuffle: %s'%(FLAGS.mode == 'Train'))
-            output = tf.train.slice_input_producer([image_list_LR_tensor, image_list_HR_tensor, image_list_TMAP_tensor],
+
+            output = tf.train.slice_input_producer([image_list_LR_tensor, image_list_HR_tensor],
                                                    shuffle=False, capacity=FLAGS.name_queue_capacity)
 
             # Reading and decode the images
-            reader = tf.WholeFileReader(name='image_reader')
             image_LR = tf.read_file(output[0])
             image_HR = tf.read_file(output[1])
-            image_TMAP = tf.read_file(output[2])
+            # image_TMAP = tf.read_file(output[2])
             input_image_LR = tf.image.decode_png(image_LR, channels=3)
             input_image_HR = tf.image.decode_png(image_HR, channels=3)
-            input_image_TMAP = tf.image.decode_png(image_TMAP, channels=1)
+            input_image_TMAP = tf.py_func(cap_tmap, [output[2]],
+                                          tf.float32)  # tf.image.decode_png(image_TMAP, channels=1)
             input_image_LR = tf.image.convert_image_dtype(input_image_LR, dtype=tf.float32)
             input_image_HR = tf.image.convert_image_dtype(input_image_HR, dtype=tf.float32)
-            input_image_TMAP = tf.image.convert_image_dtype(input_image_TMAP, dtype=tf.float32)
+            # input_image_TMAP = tf.image.convert_image_dtype(input_image_TMAP, dtype=tf.float32)
             input_image_LR = tf.concat([input_image_LR, input_image_TMAP], 2)
 
             assertion_LR = tf.assert_equal(tf.shape(input_image_LR)[2], 4,
@@ -152,100 +150,36 @@ def data_loader(FLAGS):
     )
 
 
-# The test data loader. Allow input image with different size
-def test_data_loader(FLAGS):
-    # Get the image name list
-    if (FLAGS.input_dir_LR == 'None') or (FLAGS.input_dir_HR == 'None') or (FLAGS.input_dir_TMAP == 'None'):
-        raise ValueError('Input directory is not provided')
-
-    if (not os.path.exists(FLAGS.input_dir_LR)) or (not os.path.exists(FLAGS.input_dir_HR)) or (
-    not os.path.exists(FLAGS.input_dir_TMAP)):
-        raise ValueError('Input directory not found')
-
-    image_list_LR_temp = os.listdir(FLAGS.input_dir_LR)
-    image_list_LR = [os.path.join(FLAGS.input_dir_LR, _) for _ in image_list_LR_temp if _.split('.')[-1] == 'png']
-    image_list_HR = [os.path.join(FLAGS.input_dir_HR, _) for _ in image_list_LR_temp if _.split('.')[-1] == 'png']
-    image_list_TMAP = [os.path.join(FLAGS.input_dir_TMAP, _) for _ in image_list_LR_temp if _.split('.')[-1] == 'png']
-
-    # Read in and preprocess the images
-    def preprocess_test(name, mode):
-        im = sic.imread(name).astype(np.float32)
-        if mode == 'TMAP':
-            tf.assert_equal(len(im.shape), 2, message="TMAP is not grayscale")
-            im = np.expand_dims(im, axis=2)
-        # check grayscale image
-        # if im.shape[-1] != 3:
-        #     h, w = im.shape
-        #     temp = np.empty((h, w, 3), dtype=np.uint8)
-        #     temp[:, :, :] = im[:, :, np.newaxis]
-        #     im = temp.copy()
-        if mode == 'LR' or mode == 'TMAP':
-            im = im / np.max(im)
-        elif mode == 'HR':
-            im = im / np.max(im)
-            im = im * 2 - 1
-
-        return im
-
-    image_LR = [preprocess_test(_, 'LR') for _ in image_list_LR]
-    image_HR = [preprocess_test(_, 'HR') for _ in image_list_HR]
-    image_TMAP = [preprocess_test(_, 'TMAP') for _ in image_list_TMAP]
-
-    image_LR = [np.concatenate((im, tmap), axis=2) for im, tmap in zip(image_LR, image_TMAP)]
-
-    # Push path and image into a list
-    Data = collections.namedtuple('Data', 'paths_LR, paths_HR, inputs, targets')
-
-    return Data(
-        paths_LR=image_list_LR,
-        paths_HR=image_list_HR,
-        inputs=image_LR,
-        targets=image_HR
-    )
-
-
 # The inference data loader. Allow input image with different size
 def inference_data_loader(FLAGS):
+    cap_tmap = partial(get_tmap, beta=FLAGS.tmap_beta)
+
     # Get the image name list
-    if (FLAGS.input_dir_LR == 'None') or (FLAGS.input_dir_TMAP == 'None'):
+    if FLAGS.input_dir_LR == 'None':
         raise ValueError('Input directory is not provided')
 
-    if (not os.path.exists(FLAGS.input_dir_LR)) or (not os.path.exists(FLAGS.input_dir_TMAP)):
+    if not os.path.exists(FLAGS.input_dir_LR):
         raise ValueError('Input directory not found')
 
     image_list_LR_temp = os.listdir(FLAGS.input_dir_LR)
     image_list_LR = [os.path.join(FLAGS.input_dir_LR, _) for _ in image_list_LR_temp if _.split('.')[-1] == 'png']
-    image_list_TMAP = [os.path.join(FLAGS.input_dir_TMAP, _) for _ in image_list_LR_temp if _.split('.')[-1] == 'png']
 
     # Read in and preprocess the images
-    def preprocess_test(name, mode):
-        im = sic.imread(name).astype(np.float32)
-        # im = im / 255.0   ## np.max(im) or 255
-        if mode == 'TMAP':
-            im = im / 255.0
-            tf.assert_equal(len(im.shape), 2, message="TMAP is not grayscale")
-            im = np.expand_dims(im, axis=2)
-            if FLAGS.inference_mode == 'depth':
-                im = np.exp(- FLAGS.tmap_beta * im)
-            elif FLAGS.inference_mode == 'tmap':
-                im = np.log(im)  # exp(-beta * d) --> - beta * d, assumtion beta = 1 
-                im = np.exp(FLAGS.tmap_beta * im)  # exp( new_beta * - bet * d)
-        else:
-            im = im / np.max(im)
+    def preprocess_test(image_path):
+        im = sic.imread(image_path).astype(np.float32)
+        assert im.shape[2] == 3  # Throw error if GrayScale
+        im = im / np.max(im)
+        tmap = cap_tmap(image_path)
+        return im, tmap
 
-        # TODO: check grayscale image, Reject
-        # if im.shape[-1] != 3:
-        #     h, w = im.shape
-        #     temp = np.empty((h, w, 3), dtype=np.uint8)
-        #     temp[:, :, :] = im[:, :, np.newaxis]
-        #     im = temp.copy()
-        # im = im / np.max(im)
+    image_LR = [preprocess_test(_) for _ in image_list_LR]
+    image_LR = [np.concatenate((im, np.expand_dims(tmap, axis=2)), axis=2) for im, tmap in image_LR]
 
-        return im
-
-    image_LR = [preprocess_test(_, 'LR') for _ in image_list_LR]
-    image_TMAP = [preprocess_test(_, 'TMAP') for _ in image_list_TMAP]
-    image_LR = [np.concatenate((im, tmap), axis=2) for im, tmap in zip(image_LR, image_TMAP)]
+    # _image_LR = [preprocess_test(_) for _ in image_list_LR]
+    # image_LR = []
+    # for im, tmap in _image_LR:
+    #     tmp = np.concatenate((im, tmap), axis=2)
+    #     image_LR.append(tmp)
 
     # Push path and image into a list
     Data = collections.namedtuple('Data', 'paths_LR, inputs')
