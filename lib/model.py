@@ -49,14 +49,14 @@ def data_loader(FLAGS):
             # Reading and decode the images
             image_LR = tf.read_file(output[0])
             image_HR = tf.read_file(output[1])
-            # image_TMAP = tf.read_file(output[2])
             input_image_LR = tf.image.decode_png(image_LR, channels=3)
             input_image_HR = tf.image.decode_png(image_HR, channels=3)
-            input_image_TMAP = tf.py_func(cap_tmap, [output[2]],
-                                          tf.float32)  # tf.image.decode_png(image_TMAP, channels=1)
+
             input_image_LR = tf.image.convert_image_dtype(input_image_LR, dtype=tf.float32)
             input_image_HR = tf.image.convert_image_dtype(input_image_HR, dtype=tf.float32)
-            # input_image_TMAP = tf.image.convert_image_dtype(input_image_TMAP, dtype=tf.float32)
+            input_image_TMAP = tf.py_func(cap_tmap, [input_image_LR],
+                                          tf.float32)
+            input_image_TMAP = tf.expand_dims(input_image_TMAP, axis=-1)
             input_image_LR = tf.concat([input_image_LR, input_image_TMAP], 2)
 
             assertion_LR = tf.assert_equal(tf.shape(input_image_LR)[2], 4,
@@ -168,18 +168,12 @@ def inference_data_loader(FLAGS):
     def preprocess_test(image_path):
         im = sic.imread(image_path).astype(np.float32)
         assert im.shape[2] == 3  # Throw error if GrayScale
-        im = im / np.max(im)
-        tmap = cap_tmap(image_path)
+        im = im / 255.0
+        tmap = cap_tmap(im)
         return im, tmap
 
     image_LR = [preprocess_test(_) for _ in image_list_LR]
     image_LR = [np.concatenate((im, np.expand_dims(tmap, axis=2)), axis=2) for im, tmap in image_LR]
-
-    # _image_LR = [preprocess_test(_) for _ in image_list_LR]
-    # image_LR = []
-    # for im, tmap in _image_LR:
-    #     tmp = np.concatenate((im, tmap), axis=2)
-    #     image_LR.append(tmp)
 
     # Push path and image into a list
     Data = collections.namedtuple('Data', 'paths_LR, inputs')
@@ -308,7 +302,7 @@ def VGG19_slim(input, type, reuse, scope):
         target_layer = 'vgg_19/conv2/conv2_2'
     else:
         raise NotImplementedError('Unknown perceptual type')
-    _, output = vgg_19(input, is_training=False, reuse=reuse)
+    _, output = vgg_19(input, reuse=reuse)
     output = output[target_layer]
 
     return output
