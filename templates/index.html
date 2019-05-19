@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MemN2N for bAbI Tasks</title>
+
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="../static/style.css" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css?family=Shadows+Into+Light+Two" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet" type="text/css">
+
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="../static/script.js"></script>
+</head>
+
+<body>
+<h2 class="text-center app-header">End-To-End Memory Network for bAbI Tasks</h2>
+<br>
+<div class="container">
+    <div class="row">
+        <div class="row shadow input-container">
+            <form class="input-form">
+                <div class="col-md-3 form-group">
+                    <h4><label for="image_path">Image Path</label></h4>
+                    <input class="form-control" id="image_path" autofocus/>
+                </div>
+
+                <div class="col-md-3 form-group">
+                    <h4>
+                        <label for="beta">Beta</label>
+                        <i class="glyphicon glyphicon-info-sign" data-toggle="tooltip"
+                           data-placement="top" title="Beta to convert CAP depth to tmap"></i>
+                    </h4>
+                    <input class="form-control" id="beta" autofocus
+                           autocomplete="off" spellcheck="false">
+                </div>
+
+                <div class="col-md-3 text-center">
+                    <button class="btn btn-primary" id="dehaze" type="submit">Dehaze Image</button>
+                </div>
+            </form>
+        </div>
+
+        <!--<div class="row shadow image-container">
+            <div class="form-group">
+                <table class="table table-hover" id="explanation">
+                    <thead>
+                        <tr>
+                            <th>Text</th>
+                            <th>Mem 1</th>
+                            <th>Mem 2</th>
+                            <th>Mem 3</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>-->
+
+    </div>
+</div>
+</body>
+</html>
