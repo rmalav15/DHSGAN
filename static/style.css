@@ -12,7 +12,7 @@ div.shadow {
 }
 
 .input-container, .image-container {
-    width: 550px;
+    width: auto;
     /*max-height: 650px;*/
     padding: 20px 50px 40px;
     margin-top: 10px;
@@ -28,26 +28,32 @@ div.shadow {
     text-align: center;
 }
 
-.input-form {
-    max-width: 600px;
-    margin: 0 auto;
-}
+/*.input-form {*/
+/*    max-width: 600px;*/
+/*    margin: 0 auto;*/
+/*}*/
 
 .input-form .btn {
     width: 200px;
 }
 
 /* Font */
-.app-header, .input-form label, .input-container label, .input-container th {
+.app-header, .input-form label, .input-container label, .image-container label, .input-container th {
     font-family: 'Shadows Into Light Two', sans-serif;
 }
 
 .input-form input, .input-form textarea, .input-form button {
     font-family: 'Roboto', sans-serif;
+    height: auto;
 }
 
 
 .middle {
-  display: table-cell;
-  vertical-align: middle;
+    margin-top: 43px;
+}
+
+.column {
+  float: left;
+  width: 33.33%;
+  padding: 5px;
 }

@@ -20,48 +20,43 @@
 <h2 class="text-center app-header">DHSGAN: An End to End Dehazing Network for Fog and Smoke</h2>
 <br>
 <div class="container">
-    <div class="row">
-        <div class="row shadow input-container">
-            <form class="input-form">
-                <div class="col-md-6 form-group">
-                    <h4><label for="image_path">Image Path</label></h4>
-                    <input class="form-control" id="image_path" autofocus/>
-                </div>
 
-                <div class="col-md-3 form-group">
-                    <h4>
-                        <label for="beta">Beta</label>
-                        <i class="glyphicon glyphicon-info-sign" data-toggle="tooltip"
-                           data-placement="top" title="Beta to convert CAP depth to tmap"></i>
-                    </h4>
-                    <input class="form-control" id="beta" autofocus
-                           autocomplete="off" spellcheck="false">
-                </div>
-
-                <div  class="col-md-3 form-group middle">
-                    <button class="btn btn-primary" id="dehaze" type="submit">Dehaze Image</button>
-                </div>
-            </form>
-        </div>
-
-        <!--<div class="row shadow image-container">
-            <div class="form-group">
-                <table class="table table-hover" id="explanation">
-                    <thead>
-                        <tr>
-                            <th>Text</th>
-                            <th>Mem 1</th>
-                            <th>Mem 2</th>
-                            <th>Mem 3</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
+    <div class="row shadow input-container">
+        <form id='image-form' class="input-form" enctype="multipart/form-data">
+            <div class="col-md-6 form-group input-file">
+                <h4><label for="image">Image Path</label></h4>
+                <input type="file" class="form-control" id="image" name="image" autofocus/>
             </div>
-        </div>-->
 
+            <div class="col-md-3 form-group">
+                <h4>
+                    <label for="beta">Beta</label>
+                    <i class="glyphicon glyphicon-info-sign" data-toggle="tooltip"
+                       data-placement="top" title="Beta to convert CAP depth to tmap"></i>
+                </h4>
+                <input class="form-control" id="beta" name="beta">
+            </div>
+
+            <div class="col-md-3 form-group middle">
+                <button class="btn btn-primary" id="dehaze" type="submit">Dehaze Image</button>
+            </div>
+        </form>
     </div>
-</div>
+
+
+    <div class="row shadow image-container">
+        <div class="column">
+            <h4><label for="real">Real Image</label></h4>
+            <img src="" id="real" style="width:100%">
+        </div>
+        <div class="column">
+            <h4><label for="tmap">T-Map</label></h4>
+            <img src="" id="tmap" style="width:100%">
+        </div>
+        <div class="column">
+            <h4><label for="result">Dehazed Image</label></h4>
+            <img src="" id="result" style="width:100%">
+        </div>
+    </div>
 </body>
 </html>

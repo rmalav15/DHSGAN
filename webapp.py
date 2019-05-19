@@ -14,6 +14,7 @@ import flask
 import numpy as np
 import scipy.misc as sic
 
+from werkzeug.utils import secure_filename
 from cap.calDepthMap import get_tmap
 from lib.model import generator
 from lib.ops import *
@@ -23,7 +24,7 @@ parser.add_argument("--model_path",
                     default='/mnt/069A453E9A452B8D/Ram/KAIST/SRGAN_data/'
                             'experiment_clean_reside_pred_g20_SRGAN/model-170000',
                     help="path for model")
-parser.add_argument("--output_dir", default='./output', help="output folder")
+parser.add_argument("--output_dir", default='./static/images', help="output folder")
 args = parser.parse_args()
 
 app = flask.Flask(__name__)
@@ -59,8 +60,8 @@ with tf.name_scope('convert_image'):
 with tf.name_scope('encode_image'):
     save_fetch = {
         "path_LR": path_LR,
-        "inputs": tf.map_fn(tf.image.encode_png, converted_inputs, dtype=tf.string, name='input_pngs'),
-        "outputs": tf.map_fn(tf.image.encode_png, converted_outputs, dtype=tf.string, name='output_pngs')
+        "inputs": converted_inputs,
+        "outputs": converted_outputs
     }
 
 # Define the weight initiallizer (In inference time, we only need to restore the weight of the generator)
@@ -104,28 +105,38 @@ def image_not_found():
 
 
 # TODO: Take multiple images
-@app.route('/dehaze', methods=['GET'])
+@app.route('/dehaze', methods=['POST'])
 def dehaze():
     start = time.time()
-    image_path = flask.request.args.get('image_path', '')
-    beta = float(flask.request.args.get('beta', 2.0))
+    image = flask.request.files['image']
+    beta = float(flask.request.form['beta'])
+    image_name = None
+    image_path = None
 
-    if not os.path.exists(image_path):
+    if image:
+        image_name = secure_filename(image.filename)
+        image_path = os.path.join(args.output_dir, image_name)
+        image.save(image_path)
+    else:
         return flask.redirect(flask.url_for('image_not_found'))
+
+    dehazed_path = os.path.join(args.output_dir, 'dehazed_' + image_name)
+    tmap_path = os.path.join(args.output_dir, 'tmap_' + image_name)
+    print("image_path:", image_path)
+    print("beta:", beta)
 
     im = read_image_as_float(image_path=image_path)
     tmap = get_tmap(im, beta=beta)
     input_im = np.concatenate((im, np.expand_dims(tmap, axis=2)), axis=2)
 
-    results = sess.run(save_fetch, feed_dict={inputs_raw: input_im, path_LR: image_path})
-    cv2.imwrite(os.path.join(args.output_dir, 'real.png'), im)
-    cv2.imwrite(os.path.join(args.output_dir, 'dehazed.png'), results[0])
-    cv2.imwrite(os.path.join(args.output_dir, 'tmap.png'), tmap)
+    results = sess.run(save_fetch, feed_dict={inputs_raw: np.expand_dims(input_im, axis=0), path_LR: image_path})
+    cv2.imwrite(tmap_path, (tmap*255).astype(np.uint8))
+    cv2.imwrite(dehazed_path, cv2.cvtColor(results['outputs'][0], cv2.COLOR_RGB2BGR))
 
     return flask.jsonify({
-        "real": os.path.join(args.output_dir, 'real.png'),
-        "dehazed": os.path.join(args.output_dir, 'dehazed.png'),
-        "tmap": os.path.join(args.output_dir, 'tmap.png'),
+        "real": image_path,
+        "dehazed": dehazed_path,
+        "tmap": tmap_path,
         "time": time.time() - start
     })
 
