@@ -25,12 +25,16 @@ def calDepthMap(I, r):
     return outputRegion, outputPixel
 
 
-def get_tmap(image_path, beta=1.0, r=15, gimfiltR=60, eps=10 ** -3):
-    image = cv2.imread(image_path)
+def get_tmap(image, beta=1.0, r=15, gimfiltR=60, eps=10 ** -3):
+    # image_path = str(image_path)
+    # image = cv2.imread(image_path)
+    image = image * 255.0
+    image = image.astype(np.uint8)
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     dR, dP = calDepthMap(image, r)
     guided_filter = GuidedFilter(image, gimfiltR, eps)
     refineDR = guided_filter.filter(dR)
     tR = np.exp(-beta * refineDR)
-    cv2.imwrite("depth.png", dR*255)
-    cv2.imwrite("tmap.png", tR*255)
-    return tR
+    cv2.imwrite("depth.png", dR * 255)
+    cv2.imwrite("tmap.png", tR * 255)
+    return tR.astype(np.float32)

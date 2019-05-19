@@ -31,7 +31,7 @@ Flags.DEFINE_boolean('is_training', False, 'Training => True, Testing => False')
 Flags.DEFINE_string('vgg_ckpt', './vgg19/vgg_19.ckpt', 'path to checkpoint file for the vgg19')
 Flags.DEFINE_string('task', 'SRGAN', 'The task: SRGAN, SRResnet')
 # The data preparing operation
-Flags.DEFINE_float('tmap_beta', 3.0, 'beta for coverting depth to tmap')
+Flags.DEFINE_float('tmap_beta', 2.0, 'beta for coverting depth to tmap')
 # Flags.DEFINE_string('inference_mode', 'none', 'sepcify none/tmap/depth')
 Flags.DEFINE_integer('batch_size', 16, 'Batch size of the input batch')
 Flags.DEFINE_string('input_dir_LR', '/mnt/069A453E9A452B8D/Ram/KAIST/Fog_Videos_Real/test_CAP/image_hazed',
@@ -87,13 +87,6 @@ if FLAGS.mode == 'inference':
     # Check the checkpoint
     if FLAGS.checkpoint is None:
         raise ValueError('The checkpoint file is needed to performing the test.')
-
-    # In the testing time, no flip and crop is needed
-    # if FLAGS.flip == True:
-    #     FLAGS.flip = False
-
-    # if FLAGS.crop_size is not None:
-    #     FLAGS.crop_size = None
 
     # Declare the test data reader
     inference_data = inference_data_loader(FLAGS)
