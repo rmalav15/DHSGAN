@@ -20,9 +20,10 @@ from lib.ops import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_path",
-                    default='/mnt/069A453E9A452B8D/Ram/KAIST/SRGAN_data/experiment_clean_reside_pred_g20_SRGAN/model-170000',
-                    type=str, help="path for model")
-parser.add_argument("--output_dir", default='./output', type=str, help="output folder")
+                    default='/mnt/069A453E9A452B8D/Ram/KAIST/SRGAN_data/'
+                            'experiment_clean_reside_pred_g20_SRGAN/model-170000',
+                    help="path for model")
+parser.add_argument("--output_dir", default='./output', help="output folder")
 args = parser.parse_args()
 
 app = flask.Flask(__name__)
@@ -42,8 +43,9 @@ FLAGS = _FLAGS(
     is_training=False
 )
 
-gen_output = generator(inputs_raw, 3, reuse=False, FLAGS=FLAGS)
-print('Finish building the network')
+with tf.variable_scope('generator'):
+    gen_output = generator(inputs_raw, 3, reuse=False, FLAGS=FLAGS)
+    print('Finish building the network')
 
 with tf.name_scope('convert_image'):
     # Deprocess the images outputed from the model
@@ -63,7 +65,7 @@ with tf.name_scope('encode_image'):
 
 # Define the weight initiallizer (In inference time, we only need to restore the weight of the generator)
 var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='generator')
-weight_initiallizer = tf.train.Saver(var_list)
+weight_initializer = tf.train.Saver(var_list)
 
 # Define the initialization operation
 init_op = tf.global_variables_initializer()
@@ -75,7 +77,7 @@ sess = tf.Session(config=config)
 
 # Load the pretrained model
 print('Loading weights from the pre-trained model')
-weight_initiallizer.restore(sess, args.model_path)
+weight_initializer.restore(sess, args.model_path)
 
 
 def handle_exit():

@@ -11,7 +11,7 @@ div.shadow {
     color: #666;
 }
 
-.qa-container, .qa-explain-container {
+.input-container, .image-container {
     width: 550px;
     /*max-height: 650px;*/
     padding: 20px 50px 40px;
@@ -19,7 +19,7 @@ div.shadow {
     margin-left: 30px;
 }
 
-.qa-explain-container table th {
+.image-container table th {
     font-size: 16px;
     font-weight: bold;
 }
@@ -28,23 +28,26 @@ div.shadow {
     text-align: center;
 }
 
-.qa-form {
+.input-form {
     max-width: 600px;
     margin: 0 auto;
 }
 
-.qa-form .btn {
+.input-form .btn {
     width: 200px;
 }
 
-.qa-form .form-control[readonly] {
-    background-color: #fff;
-}
-
 /* Font */
-.app-header, .qa-form label, .qa-explain-container label, .qa-explain-container th {
+.app-header, .input-form label, .input-container label, .input-container th {
     font-family: 'Shadows Into Light Two', sans-serif;
 }
-/*.qa-form input, .qa-form textarea, .qa-form button {*/
-    /*font-family: 'Roboto', sans-serif;*/
-/*}*/
+
+.input-form input, .input-form textarea, .input-form button {
+    font-family: 'Roboto', sans-serif;
+}
+
+
+.middle {
+  display: table-cell;
+  vertical-align: middle;
+}
