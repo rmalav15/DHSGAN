@@ -21,10 +21,10 @@ from lib.ops import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_path",
-                    default='/mnt/069A453E9A452B8D/Ram/KAIST/SRGAN_data/'
+                    default='./data/'
                             'experiment_clean_reside_pred_g20_SRGAN/model-170000',
                     help="path for model")
-parser.add_argument("--output_dir", default='./static/images', help="output folder")
+parser.add_argument("--output_dir", default='./static/images', help="output folder [DO NOT CHANGE]")
 args = parser.parse_args()
 
 app = flask.Flask(__name__)

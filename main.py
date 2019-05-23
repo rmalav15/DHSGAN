@@ -2,25 +2,25 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import tensorflow as tf
-import tensorflow.contrib.slim as slim
+import math
 import os
+import time
+
+import numpy as np
+
 from lib.model import data_loader, generator, SRGAN, inference_data_loader, save_images, SRResnet
 from lib.ops import *
-import math
-import time
-import numpy as np
 
 Flags = tf.app.flags
 
 # The system parameter
-Flags.DEFINE_string('output_dir', '/mnt/069A453E9A452B8D/Ram/DHSGAN_data/fog_exp2/',
+Flags.DEFINE_string('output_dir', None,
                     'The output directory of the checkpoint')
-Flags.DEFINE_string('summary_dir', '/mnt/069A453E9A452B8D/Ram/DHSGAN_data/fog_exp2/log/',
+Flags.DEFINE_string('summary_dir', None,
                     'The dirctory to output the summary')
 Flags.DEFINE_string('mode', 'inference', 'The mode of the model train, inference.')
 Flags.DEFINE_string('checkpoint',
-                    '/mnt/069A453E9A452B8D/Ram/KAIST/SRGAN_data/experiment_clean_reside_pred_g20_SRGAN/model-170000',
+                    None,
                     'If provided, the weight will be restored from the provided checkpoint')
 Flags.DEFINE_boolean('pre_trained_model', True,
                      'If set True, the weight will be loaded but the global_step will still '
@@ -31,10 +31,10 @@ Flags.DEFINE_boolean('is_training', False, 'Training => True, Testing => False')
 Flags.DEFINE_string('vgg_ckpt', './vgg19/vgg_19.ckpt', 'path to checkpoint file for the vgg19')
 Flags.DEFINE_string('task', 'SRGAN', 'The task: SRGAN, SRResnet')
 # The data preparing operation
-Flags.DEFINE_float('tmap_beta', 2.0, 'beta for coverting depth to tmap')
+Flags.DEFINE_float('tmap_beta', 2.0, 'beta for coverting depth estimated by CAP to tmap')
 # Flags.DEFINE_string('inference_mode', 'none', 'sepcify none/tmap/depth')
 Flags.DEFINE_integer('batch_size', 16, 'Batch size of the input batch')
-Flags.DEFINE_string('input_dir_LR', '/mnt/069A453E9A452B8D/Ram/KAIST/Fog_Videos_Real/test_CAP/image_hazed',
+Flags.DEFINE_string('input_dir_LR', None,
                     'The directory of the input resolution input data')
 Flags.DEFINE_string('input_dir_HR', None, 'The directory of the high resolution input data')
 # Flags.DEFINE_string('input_dir_TMAP', None, 'The directory of the tmap')
