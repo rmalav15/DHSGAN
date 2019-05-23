@@ -4,7 +4,7 @@
 
 This is the official implementation of "DHSGAN: An End to End Dehazing Network for Fog and Smoke", published in 
 14th Asian Conference on Computer Vision (ACCV) 2018 in Perth, WA, Australia. [[Paper (TODO: add arxiv link)]]()
-[[inference model]](https://drive.google.com/file/d/1U0Dn2IUZfC_odITYCSkSYDj7sIg6PjLZ/view?usp=sharing)
+[[pretrained model]](https://drive.google.com/file/d/1U0Dn2IUZfC_odITYCSkSYDj7sIg6PjLZ/view?usp=sharing)
 
 
 
@@ -30,7 +30,7 @@ to synthesize training samples Hazy/Clean/Transmission Images. For getting start
 [RESIDE](https://sites.google.com/view/reside-dehaze-datasets/reside-v0) (indoor-outdoor) can be good dataset to train 
 generalized model.
 
-After downloading, first train only (optional) DHSGAN generator network by executing (after editing as per your config)
+After downloading and extracting RESIDE, first train only (optional) DHSGAN generator network by executing (after editing as per your config)
  train_DHSGAN_generator.sh:
  ```bash
  #!/usr/bin/env bash
@@ -62,7 +62,7 @@ CUDA_VISIBLE_DEVICES=0 python main.py \
     --save_freq 20000
 ```
 
-Then DHSGAN generator is finetuned by GAN framework. To train DHSGAN execute train_DHSGAN.sh:
+Then DHSGAN generator is finetuned by GAN framework. To train full DHSGAN execute train_DHSGAN.sh:
  ```bash
 #!/usr/bin/env bash
 CUDA_VISIBLE_DEVICES=0 python main.py \
