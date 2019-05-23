@@ -14,7 +14,8 @@ This is the official implementation of "DHSGAN: An End to End Dehazing Network f
 
 - Python 2.7 (Also compatible with python 3.5, 3.8 {checked with pycharm code inspection})
 - Tensorflow == 1.4.0 (Should work on other versions with minor changes)
-- Opencv-python (Used for video loading and saving)
+- Opencv-python (Used for video loading and saving
+- Flask (For webapp)
 
 The code is tested on :- Ubuntu 14.04 LTS with CPU architecture x86_64 + Nvidia Titan X 1070 + cuda9.0.
 
