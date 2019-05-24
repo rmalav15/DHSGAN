@@ -3,7 +3,7 @@
 ## Introduction
 
 This is the official implementation of "DHSGAN: An End to End Dehazing Network for Fog and Smoke", published in 
-14th Asian Conference on Computer Vision (ACCV) 2018 in Perth, WA, Australia. [[Paper (TODO: add arxiv link)]]()
+14th Asian Conference on Computer Vision (ACCV) 2018 in Perth, WA, Australia. [[Paper]](https://drive.google.com/file/d/1uoy5JAfXSfCjd0VtJoQEu_6dT8Z9V-DO/view?usp=sharing)
 [[pretrained model]](https://drive.google.com/file/d/1U0Dn2IUZfC_odITYCSkSYDj7sIg6PjLZ/view?usp=sharing)
 
 
