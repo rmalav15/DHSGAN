@@ -128,12 +128,23 @@ After running above, the demo can be accessed at: http://127.0.0.1:5000/
 
 If you use our work. Please cite:
 ```bash
-@inproceedings{malav2018dhsgan,
-  title={DHSGAN: An End to End Dehazing Network for Fog and Smoke},
-  author={Malav, Ramavtar and Kim, Ayoung and Sahoo, Soumya Ranjan and Pandey, Gaurav},
-  booktitle={Asian Conference on Computer Vision},
-  year={2018},
-  organization={Asian Conference on Computer Vision (ACCV)}
+@InProceedings{10.1007/978-3-030-20873-8_38,
+author="Malav, Ramavtar
+and Kim, Ayoung
+and Sahoo, Soumya Ranjan
+and Pandey, Gaurav",
+editor="Jawahar, C.V.
+and Li, Hongdong
+and Mori, Greg
+and Schindler, Konrad",
+title="DHSGAN: An End to End Dehazing Network for Fog and Smoke",
+booktitle="Computer Vision -- ACCV 2018",
+year="2019",
+publisher="Springer International Publishing",
+address="Cham",
+pages="593--608",
+abstract="In this paper we propose a novel end-to-end convolution dehazing architecture, called De-Haze and Smoke GAN (DHSGAN). The model is trained under a generative adversarial network framework to effectively learn the underlying distribution of clean images for the generation of realistic haze-free images. We train the model on a dataset that is synthesized to include image degradation scenarios from varied conditions of fog, haze, and smoke in both indoor and outdoor settings. Experimental results on both synthetic and natural degraded images demonstrate that our method shows significant robustness over different haze conditions in comparison to the state-of-the-art methods. A group of studies are conducted to evaluate the effectiveness of each module of the proposed method.",
+isbn="978-3-030-20873-8"
 }
 ```
 
