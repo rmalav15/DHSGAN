@@ -97,6 +97,11 @@ CUDA_VISIBLE_DEVICES=0 python main.py \
     --checkpoint ./experiment_generator/model-170000
 ```
 
+To observe the training losses, learning rate, graph and predicted images, use tensorboard:
+```bash
+tensorboard --logdir [summary_dir]
+```
+
 **NOTE**: To make the code more usable, the transmission module in this repository is replaced with [CAP](https://ieeexplore.ieee.org/document/7128396).
 The transmission module used in paper was originally implemented in Torch. 
 
