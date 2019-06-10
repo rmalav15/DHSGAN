@@ -119,7 +119,7 @@ CUDA_VISIBLE_DEVICES=0 python main.py \
     --pre_trained_model True \
     --checkpoint ./checkpoint/model-170000
 ```
-**NOTE**: here "tmap_beta" is used to convert depth estimated by [CAP](https://ieeexplore.ieee.org/document/7128396) to T-Map using exp(-tmap_beta * depth). If you increase the tmap_beta the dehazed image will be more clear but it will introduce more artificial colors into image.
+**NOTE**: here "tmap_beta" is used to convert depth estimated by [CAP](https://ieeexplore.ieee.org/document/7128396) to T-Map using exp(-tmap_beta * depth). If you increase the tmap_beta, the dehazed image will be more clear but it will introduce more artificial colors into image.
 
 Additionally we also implement a webapp for demo, which doesnt require any deep learning knowledge. To run the demo use:
  ```bash
