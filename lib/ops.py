@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
+import tf_slim as slim
 import pdb
 import keras
 
@@ -36,10 +36,10 @@ def conv2(batch_input, kernel=3, output_channel=64, stride=1, use_bias=True, sco
     with tf.variable_scope(scope):
         if use_bias:
             return slim.conv2d(batch_input, output_channel, [kernel, kernel], stride, 'SAME', data_format='NHWC',
-                               activation_fn=None, weights_initializer=tf.contrib.layers.xavier_initializer())
+                               activation_fn=None, weights_initializer=tf.initializers.GlorotUniform())
         else:
             return slim.conv2d(batch_input, output_channel, [kernel, kernel], stride, 'SAME', data_format='NHWC',
-                               activation_fn=None, weights_initializer=tf.contrib.layers.xavier_initializer(),
+                               activation_fn=None, weights_initializer=tf.initializers.GlorotUniform(),
                                biases_initializer=None)
 
 
@@ -49,10 +49,10 @@ def conv2_NCHW(batch_input, kernel=3, output_channel=64, stride=1, use_bias=True
     with tf.variable_scope(scope):
         if use_bias:
             return slim.conv2d(batch_input, output_channel, [kernel, kernel], stride, 'SAME', data_format='NCWH',
-                               activation_fn=None, weights_initializer=tf.contrib.layers.xavier_initializer())
+                               activation_fn=None, weights_initializer=tf.initializers.GlorotUniform())
         else:
             return slim.conv2d(batch_input, output_channel, [kernel, kernel], stride, 'SAME', data_format='NCWH',
-                               activation_fn=None, weights_initializer=tf.contrib.layers.xavier_initializer(),
+                               activation_fn=None, weights_initializer=tf.initializers.GlorotUniform(),
                                biases_initializer=None)
 
 
@@ -79,7 +79,7 @@ def batchnorm(inputs, is_training):
 # Our dense layer
 def denselayer(inputs, output_size):
     output = tf.layers.dense(inputs, output_size, activation=None,
-                             kernel_initializer=tf.contrib.layers.xavier_initializer())
+                             kernel_initializer=tf.initializers.GlorotUniform())
     return output
 
 
@@ -206,3 +206,4 @@ def vgg_19(inputs,
 
 
 vgg_19.default_image_size = 224
+
